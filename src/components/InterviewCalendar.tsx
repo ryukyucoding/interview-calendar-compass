@@ -61,7 +61,7 @@ const InterviewCalendar: React.FC<InterviewCalendarProps> = ({ interviews, depar
       <Card className="p-6">
         <div className="flex">
           {/* 時間軸區域 */}
-          <div className="flex-shrink-0 w-20 mr-4">
+          <div className="flex-shrink-0 w-16">
             <div className="h-20"></div> {/* 為標題留出空間 */}
             <TimeAxis />
           </div>

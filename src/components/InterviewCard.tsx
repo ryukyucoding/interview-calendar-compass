@@ -11,12 +11,12 @@ interface InterviewCardProps {
 const InterviewCard: React.FC<InterviewCardProps> = ({ interview, departmentColor, style }) => {
   return (
     <div
-      className={`absolute rounded-lg border-l-4 p-2 shadow-sm hover:shadow-md transition-shadow cursor-pointer
+      className={`absolute rounded border-l-4 p-1.5 shadow-sm hover:shadow-md transition-shadow cursor-pointer overflow-hidden
         ${departmentColor.bgColor} ${departmentColor.borderColor} ${departmentColor.color}`}
       style={style}
     >
-      <div className="font-medium text-sm leading-tight">{interview.Name}</div>
-      <div className="text-xs opacity-75 mt-1">
+      <div className="font-medium text-xs leading-tight truncate">{interview.Name}</div>
+      <div className="text-xs opacity-75 mt-0.5 truncate">
         {interview.Start_Time} - {interview.End_Time}
       </div>
     </div>
