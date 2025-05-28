@@ -85,9 +85,14 @@ const InterviewCalendar: React.FC<InterviewCalendarProps> = ({ interviews, depar
 
                     <div className="relative">
                       <div className="relative min-h-[640px] border-l border-gray-200">
-                        {/* Hour grid lines */}
+                        {/* Hour grid lines - 對齊時間軸的每小時標記 */}
                         {Array.from({ length: 10 }).map((_, i) => (
                           <div key={i} className="absolute w-full border-b border-gray-100" style={{ top: i * 64 }} />
+                        ))}
+                        
+                        {/* Half hour grid lines - 對齊時間軸的半小時標記 */}
+                        {Array.from({ length: 9 }).map((_, i) => (
+                          <div key={`half-${i}`} className="absolute w-full border-b border-gray-50" style={{ top: i * 64 + 32 }} />
                         ))}
                         
                         {/* Interview cards */}
