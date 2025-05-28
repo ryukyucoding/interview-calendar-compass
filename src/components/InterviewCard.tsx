@@ -19,9 +19,6 @@ const InterviewCard: React.FC<InterviewCardProps> = ({ interview, departmentColo
       <div className="text-xs opacity-75 mt-1">
         {interview.Start_Time} - {interview.End_Time}
       </div>
-      <div className="text-xs font-medium mt-1">
-        {interview.Department}
-      </div>
     </div>
   );
 };
