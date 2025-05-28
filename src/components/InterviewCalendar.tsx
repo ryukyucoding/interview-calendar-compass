@@ -22,25 +22,63 @@ const InterviewCalendar: React.FC<InterviewCalendarProps> = ({ interviews, depar
     if (!selectedDepartment) return interviews;
     return interviews.filter(interview => interview.Department === selectedDepartment);
   }, [interviews, selectedDepartment]);
-
   const getDepartmentColor = (department: string): DepartmentColor => {
     return departmentColors.find(d => d.name === department) || departmentColors[0];
   };
 
-  const getTimePosition = (time: string): number => {
+  const getActualDate = (dayNumber: number): string => {
+    // Starting from September 19, 2024 (assuming current year)
+    const startDate = new Date(2024, 8, 19); // Month is 0-indexed, so 8 = September
+    const targetDate = new Date(startDate);
+    targetDate.setDate(startDate.getDate() + (dayNumber - 1));
+    
+    const month = targetDate.getMonth() + 1;
+    const day = targetDate.getDate();
+    return `${month}/${day}`;
+  };  const getTimePosition = (time: string): number => {
     const [hours, minutes] = time.split(':').map(Number);
     const totalMinutes = (hours - 9) * 60 + minutes; // 9 AM is our baseline
-    return (totalMinutes / 60) * 64; // 64px per hour
-  };
-
-  const getInterviewHeight = (startTime: string, endTime: string): number => {
+    return (totalMinutes / 60) * 150; // 150px per hour
+  };  const getInterviewHeight = (startTime: string, endTime: string): number => {
     const [startHours, startMinutes] = startTime.split(':').map(Number);
     const [endHours, endMinutes] = endTime.split(':').map(Number);
     const startTotalMinutes = startHours * 60 + startMinutes;
     const endTotalMinutes = endHours * 60 + endMinutes;
     const durationMinutes = endTotalMinutes - startTotalMinutes;
-    return (durationMinutes / 60) * 64; // 64px per hour
+    return (durationMinutes / 60) * 150; // 150px per hour
   };
+
+  // Helper function to detect overlapping interviews and assign columns
+  const getInterviewLayout = (interviews: Interview[]) => {
+    const layout: { [key: string]: { column: number; totalColumns: number } } = {};
+    
+    // Group interviews by time slot to detect overlaps
+    const timeSlots: { [key: string]: Interview[] } = {};
+    
+    interviews.forEach(interview => {
+      const key = `${interview.Date_K}-${interview.Start_Time}`;
+      if (!timeSlots[key]) {
+        timeSlots[key] = [];
+      }
+      timeSlots[key].push(interview);
+    });
+    
+    // Assign columns for overlapping interviews
+    Object.values(timeSlots).forEach(slotInterviews => {
+      const totalColumns = slotInterviews.length;
+      slotInterviews.forEach((interview, index) => {
+        const key = `${interview.Applicant_ID}-${interview.Department}-${interview.Date_K}`;
+        layout[key] = {
+          column: index,
+          totalColumns: totalColumns
+        };
+      });
+    });
+    
+    return layout;
+  };
+
+  const interviewLayout = getInterviewLayout(filteredInterviews);
 
   const days = Array.from({ length: 8 }, (_, i) => i + 1);
 
@@ -56,10 +94,9 @@ const InterviewCalendar: React.FC<InterviewCalendarProps> = ({ interviews, depar
         selectedDepartment={selectedDepartment}
         onDepartmentChange={setSelectedDepartment}
         departmentColors={departmentColors}
-      />      <Card className="p-6">
-        <div className="flex">
-          {/* 時間軸區域 */}
-          <div className="flex-shrink-0 w-16 mr-4">
+      />      <Card className="p-6">        <div className="flex">
+          {/* 時間軸區域 - 調整位置消除間隙 */}
+          <div className="flex-shrink-0 w-20 pr-1">
             {/* 與日程標題對齊的空白區域 */}
             <div className="h-20 border-b border-gray-200"></div>
             <TimeAxis />
@@ -72,10 +109,9 @@ const InterviewCalendar: React.FC<InterviewCalendarProps> = ({ interviews, depar
               {days.map(day => {
                 const dayInterviews = filteredInterviews.filter(interview => interview.Date_K === day);
                 
-                return (
-                  <div key={day} className="flex flex-col justify-center items-center bg-white border-l border-gray-200 first:border-l-0">
+                return (                  <div key={day} className="flex flex-col justify-center items-center bg-white border-l border-gray-200 first:border-l-0">
                     <h3 className="font-semibold text-gray-900">
-                      Day {day}
+                      {getActualDate(day)}
                     </h3>
                     <div className="text-xs text-gray-500 mt-1">
                       {dayInterviews.length} 場面試
@@ -92,35 +128,40 @@ const InterviewCalendar: React.FC<InterviewCalendarProps> = ({ interviews, depar
                   const dayInterviews = filteredInterviews.filter(interview => interview.Date_K === day);
                   
                   return (
-                    <div key={day} className="relative">
-                      <div className="relative min-h-[640px] border-l border-gray-200 first:border-l-0">
-                        {/* Hour grid lines - 精確對齊時間軸的每小時標記 */}
-                        {Array.from({ length: 10 }).map((_, i) => (
-                          <div key={i} className="absolute w-full border-b border-gray-100" style={{ top: i * 64 }} />
+                    <div key={day} className="relative">                      <div className="relative min-h-[1800px] border-l border-gray-200 first:border-l-0">
+                        {/* Hour grid lines - 從9:00到21:00 (13小時) */}
+                        {Array.from({ length: 13 }).map((_, i) => (
+                          <div key={i} className="absolute w-full border-b border-gray-100" style={{ top: i * 150 }} />
                         ))}
                         
-                        {/* Half hour grid lines - 精確對齊時間軸的半小時標記 */}
-                        {Array.from({ length: 9 }).map((_, i) => (
-                          <div key={`half-${i}`} className="absolute w-full border-b border-gray-50" style={{ top: i * 64 + 32 }} />
+                        {/* Half hour grid lines - 從9:30到20:30 (12個半小時) */}
+                        {Array.from({ length: 12 }).map((_, i) => (
+                          <div key={`half-${i}`} className="absolute w-full border-b border-gray-50" style={{ top: i * 150 + 75 }} />
                         ))}
-                        
-                        {/* Interview cards */}
+                          {/* Interview cards */}
                         {dayInterviews.map(interview => {
                           const departmentColor = getDepartmentColor(interview.Department);
                           const top = getTimePosition(interview.Start_Time);
                           const height = getInterviewHeight(interview.Start_Time, interview.End_Time);
                           
+                          // Get layout information for column splitting
+                          const layoutKey = `${interview.Applicant_ID}-${interview.Department}-${interview.Date_K}`;
+                          const layout = interviewLayout[layoutKey] || { column: 0, totalColumns: 1 };
+                            // Calculate position and width based on columns
+                          const columnWidth = layout.totalColumns > 1 ? `${(100 / layout.totalColumns) - 1}%` : 'calc(100% - 4px)';
+                          const leftOffset = layout.totalColumns > 1 ? `${(layout.column * 100) / layout.totalColumns}%` : '2px';
+                          
                           return (
                             <InterviewCard
-                              key={interview.Applicant_ID}
+                              key={`${interview.Applicant_ID}-${interview.Department}-${interview.Date_K}`}
                               interview={interview}
                               departmentColor={departmentColor}
                               style={{
                                 top: `${top}px`,
                                 height: `${height}px`,
-                                left: '2px',
-                                right: '2px',
-                                minHeight: '16px'
+                                left: leftOffset,
+                                width: columnWidth,
+                                minHeight: '20px'
                               }}
                             />
                           );
