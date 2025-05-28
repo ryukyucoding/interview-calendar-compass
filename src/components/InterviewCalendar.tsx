@@ -56,41 +56,50 @@ const InterviewCalendar: React.FC<InterviewCalendarProps> = ({ interviews, depar
         selectedDepartment={selectedDepartment}
         onDepartmentChange={setSelectedDepartment}
         departmentColors={departmentColors}
-      />
-
-      <Card className="p-6">
+      />      <Card className="p-6">
         <div className="flex">
           {/* 時間軸區域 */}
-          <div className="flex-shrink-0 w-16">
-            <div className="h-20"></div> {/* 為標題留出空間 */}
+          <div className="flex-shrink-0 w-16 mr-4">
+            {/* 與日程標題對齊的空白區域 */}
+            <div className="h-20 border-b border-gray-200"></div>
             <TimeAxis />
           </div>
           
           {/* 日程區域 */}
           <div className="flex-1">
-            <div className="grid grid-cols-8 gap-4">
+            {/* 日程標題行 */}
+            <div className="grid grid-cols-8 gap-1 h-20 border-b border-gray-200">
               {days.map(day => {
                 const dayInterviews = filteredInterviews.filter(interview => interview.Date_K === day);
                 
                 return (
-                  <div key={day} className="relative">
-                    <div className="sticky top-0 bg-white z-10 pb-4 border-b border-gray-200 mb-4 h-20 flex flex-col justify-center">
-                      <h3 className="font-semibold text-center text-gray-900">
-                        Day {day}
-                      </h3>
-                      <div className="text-xs text-center text-gray-500 mt-1">
-                        {dayInterviews.length} 場面試
-                      </div>
+                  <div key={day} className="flex flex-col justify-center items-center bg-white border-l border-gray-200 first:border-l-0">
+                    <h3 className="font-semibold text-gray-900">
+                      Day {day}
+                    </h3>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {dayInterviews.length} 場面試
                     </div>
-
-                    <div className="relative">
-                      <div className="relative min-h-[640px] border-l border-gray-200">
-                        {/* Hour grid lines - 對齊時間軸的每小時標記 */}
+                  </div>
+                );
+              })}
+            </div>
+            
+            {/* 日程內容區域 */}
+            <div className="relative">
+              <div className="grid grid-cols-8 gap-1">
+                {days.map(day => {
+                  const dayInterviews = filteredInterviews.filter(interview => interview.Date_K === day);
+                  
+                  return (
+                    <div key={day} className="relative">
+                      <div className="relative min-h-[640px] border-l border-gray-200 first:border-l-0">
+                        {/* Hour grid lines - 精確對齊時間軸的每小時標記 */}
                         {Array.from({ length: 10 }).map((_, i) => (
                           <div key={i} className="absolute w-full border-b border-gray-100" style={{ top: i * 64 }} />
                         ))}
                         
-                        {/* Half hour grid lines - 對齊時間軸的半小時標記 */}
+                        {/* Half hour grid lines - 精確對齊時間軸的半小時標記 */}
                         {Array.from({ length: 9 }).map((_, i) => (
                           <div key={`half-${i}`} className="absolute w-full border-b border-gray-50" style={{ top: i * 64 + 32 }} />
                         ))}
@@ -109,18 +118,18 @@ const InterviewCalendar: React.FC<InterviewCalendarProps> = ({ interviews, depar
                               style={{
                                 top: `${top}px`,
                                 height: `${height}px`,
-                                left: '4px',
-                                right: '4px',
-                                minHeight: '40px'
+                                left: '2px',
+                                right: '2px',
+                                minHeight: '16px'
                               }}
                             />
                           );
                         })}
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
