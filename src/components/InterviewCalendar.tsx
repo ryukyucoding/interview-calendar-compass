@@ -3,6 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { Interview, DepartmentColor } from '../types/interview';
 import InterviewCard from './InterviewCard';
 import TimeAxis from './TimeAxis';
+import DepartmentFilter from './DepartmentFilter';
 import { Card } from '@/components/ui/card';
 
 interface InterviewCalendarProps {
@@ -11,15 +12,16 @@ interface InterviewCalendarProps {
 }
 
 const InterviewCalendar: React.FC<InterviewCalendarProps> = ({ interviews, departmentColors }) => {
-  const [selectedDay, setSelectedDay] = useState<number>(1);
+  const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
 
   const departments = useMemo(() => {
     return [...new Set(interviews.map(interview => interview.Department))];
   }, [interviews]);
 
-  const currentDayInterviews = useMemo(() => {
-    return interviews.filter(interview => interview.Date_K === selectedDay);
-  }, [interviews, selectedDay]);
+  const filteredInterviews = useMemo(() => {
+    if (!selectedDepartment) return interviews;
+    return interviews.filter(interview => interview.Department === selectedDepartment);
+  }, [interviews, selectedDepartment]);
   const getDepartmentColor = (department: string): DepartmentColor => {
     return departmentColors.find(d => d.name === department) || departmentColors[0];
   };
@@ -45,46 +47,41 @@ const InterviewCalendar: React.FC<InterviewCalendarProps> = ({ interviews, depar
     const durationMinutes = endTotalMinutes - startTotalMinutes;
     return (durationMinutes / 60) * 150; // 150px per hour
   };
+
   // Helper function to detect overlapping interviews and assign columns
   const getInterviewLayout = (interviews: Interview[]) => {
     const layout: { [key: string]: { column: number; totalColumns: number } } = {};
     
-    // Group interviews by department and time slot to detect overlaps within department
-    const departmentTimeSlots: { [key: string]: { [key: string]: Interview[] } } = {};
+    // Group interviews by time slot to detect overlaps
+    const timeSlots: { [key: string]: Interview[] } = {};
     
     interviews.forEach(interview => {
-      const dept = interview.Department;
-      const timeKey = `${interview.Start_Time}`;
-      
-      if (!departmentTimeSlots[dept]) {
-        departmentTimeSlots[dept] = {};
+      const key = `${interview.Date_K}-${interview.Start_Time}`;
+      if (!timeSlots[key]) {
+        timeSlots[key] = [];
       }
-      if (!departmentTimeSlots[dept][timeKey]) {
-        departmentTimeSlots[dept][timeKey] = [];
-      }
-      departmentTimeSlots[dept][timeKey].push(interview);
+      timeSlots[key].push(interview);
     });
     
-    // Assign columns for overlapping interviews within each department
-    Object.values(departmentTimeSlots).forEach(deptSlots => {
-      Object.values(deptSlots).forEach(slotInterviews => {
-        const totalColumns = slotInterviews.length;
-        slotInterviews.forEach((interview, index) => {
-          const key = `${interview.Applicant_ID}-${interview.Department}-${interview.Date_K}`;
-          layout[key] = {
-            column: index,
-            totalColumns: totalColumns
-          };
-        });
+    // Assign columns for overlapping interviews
+    Object.values(timeSlots).forEach(slotInterviews => {
+      const totalColumns = slotInterviews.length;
+      slotInterviews.forEach((interview, index) => {
+        const key = `${interview.Applicant_ID}-${interview.Department}-${interview.Date_K}`;
+        layout[key] = {
+          column: index,
+          totalColumns: totalColumns
+        };
       });
     });
     
     return layout;
   };
 
-  const interviewLayout = getInterviewLayout(currentDayInterviews);
+  const interviewLayout = getInterviewLayout(filteredInterviews);
 
   const days = Array.from({ length: 8 }, (_, i) => i + 1);
+
   return (
     <div className="w-full max-w-7xl mx-auto p-6">
       <div className="mb-8">
@@ -92,80 +89,46 @@ const InterviewCalendar: React.FC<InterviewCalendarProps> = ({ interviews, depar
         <p className="text-gray-600">8天面試安排總覽</p>
       </div>
 
-      {/* Day Navigation */}
-      <div className="mb-6">
-        <div className="flex flex-wrap gap-2">
-          {days.map(day => {
-            const dayInterviews = interviews.filter(interview => interview.Date_K === day);
-            
-            return (
-              <button
-                key={day}
-                onClick={() => setSelectedDay(day)}
-                className={`px-4 py-2 rounded-lg border transition-colors ${
-                  selectedDay === day
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                Day {day} ({getActualDate(day)})
-                <div className="text-xs mt-1">
-                  {dayInterviews.length} 場面試
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <Card className="p-6">
-        <div className="mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">
-            Day {selectedDay} - {getActualDate(selectedDay)}
-          </h2>
-          <p className="text-gray-600">
-            {currentDayInterviews.length} 場面試安排
-          </p>
-        </div>
-        
-        <div className="flex">
-          {/* 時間軸區域 */}
+      <DepartmentFilter
+        departments={departments}
+        selectedDepartment={selectedDepartment}
+        onDepartmentChange={setSelectedDepartment}
+        departmentColors={departmentColors}
+      />      <Card className="p-6">        <div className="flex">
+          {/* 時間軸區域 - 調整位置消除間隙 */}
           <div className="flex-shrink-0 w-20 pr-1">
-            {/* 與部門標題對齊的空白區域 */}
+            {/* 與日程標題對齊的空白區域 */}
             <div className="h-20 border-b border-gray-200"></div>
             <TimeAxis />
           </div>
           
-          {/* 部門欄位區域 */}
+          {/* 日程區域 */}
           <div className="flex-1">
-            {/* 部門標題行 */}
-            <div className="grid grid-cols-4 gap-1 h-20 border-b border-gray-200">
-              {departments.map(dept => {
-                const deptInterviews = currentDayInterviews.filter(interview => interview.Department === dept);
-                const deptColor = getDepartmentColor(dept);
+            {/* 日程標題行 */}
+            <div className="grid grid-cols-8 gap-1 h-20 border-b border-gray-200">
+              {days.map(day => {
+                const dayInterviews = filteredInterviews.filter(interview => interview.Date_K === day);
                 
-                return (
-                  <div key={dept} className={`flex flex-col justify-center items-center border-l border-gray-200 first:border-l-0 ${deptColor.bgColor}`}>
-                    <h3 className={`font-semibold ${deptColor.color}`}>
-                      {dept}
+                return (                  <div key={day} className="flex flex-col justify-center items-center bg-white border-l border-gray-200 first:border-l-0">
+                    <h3 className="font-semibold text-gray-900">
+                      {getActualDate(day)}
                     </h3>
-                    <div className="text-xs text-gray-600 mt-1">
-                      {deptInterviews.length} 場面試
+                    <div className="text-xs text-gray-500 mt-1">
+                      {dayInterviews.length} 場面試
                     </div>
                   </div>
                 );
               })}
             </div>
             
-            {/* 面試內容區域 */}
+            {/* 日程內容區域 */}
             <div className="relative">
-              <div className="grid grid-cols-4 gap-1">
-                {departments.map(dept => {
-                  const deptInterviews = currentDayInterviews.filter(interview => interview.Department === dept);
+              <div className="grid grid-cols-8 gap-1">
+                {days.map(day => {
+                  const dayInterviews = filteredInterviews.filter(interview => interview.Date_K === day);
                   
                   return (
-                    <div key={dept} className="relative">
-                      <div className="relative min-h-[1800px] border-l border-gray-200 first:border-l-0">
+                    <div key={day} className="relative">                      <div className="relative min-h-[1800px] border-l border-gray-200 first:border-l-0">
                         {/* Hour grid lines - 從9:00到21:00 (13小時) */}
                         {Array.from({ length: 13 }).map((_, i) => (
                           <div key={i} className="absolute w-full border-b border-gray-100" style={{ top: i * 150 }} />
@@ -175,18 +138,16 @@ const InterviewCalendar: React.FC<InterviewCalendarProps> = ({ interviews, depar
                         {Array.from({ length: 12 }).map((_, i) => (
                           <div key={`half-${i}`} className="absolute w-full border-b border-gray-50" style={{ top: i * 150 + 75 }} />
                         ))}
-                        
-                        {/* Interview cards */}
-                        {deptInterviews.map(interview => {
+                          {/* Interview cards */}
+                        {dayInterviews.map(interview => {
                           const departmentColor = getDepartmentColor(interview.Department);
                           const top = getTimePosition(interview.Start_Time);
                           const height = getInterviewHeight(interview.Start_Time, interview.End_Time);
                           
-                          // Get layout information for column splitting within department
+                          // Get layout information for column splitting
                           const layoutKey = `${interview.Applicant_ID}-${interview.Department}-${interview.Date_K}`;
                           const layout = interviewLayout[layoutKey] || { column: 0, totalColumns: 1 };
-                          
-                          // Calculate position and width based on columns within the department column
+                            // Calculate position and width based on columns
                           const columnWidth = layout.totalColumns > 1 ? `${(100 / layout.totalColumns) - 1}%` : 'calc(100% - 4px)';
                           const leftOffset = layout.totalColumns > 1 ? `${(layout.column * 100) / layout.totalColumns}%` : '2px';
                           

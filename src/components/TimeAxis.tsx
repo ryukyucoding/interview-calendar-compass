@@ -26,7 +26,7 @@ const TimeAxis: React.FC = () => {
       
       {/* 最後一個時間點 (21:00) */}
       <div className="absolute w-full" style={{ top: 12 * 150 }}>
-        <div className="absolute -left-2 -top-4 text-xs text-gray-700 font-semibold w-16 text-right">
+        <div className="absolute -left-2 -top-3 text-xs text-gray-700 font-semibold w-16 text-right">
           21:00
         </div>
         <div className="absolute top-0 w-full h-px bg-gray-300" style={{ right: '-1px' }}></div>
