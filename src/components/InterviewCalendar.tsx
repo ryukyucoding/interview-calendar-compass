@@ -84,8 +84,14 @@ const InterviewCalendar: React.FC<InterviewCalendarProps> = ({ interviews, depar
 
   const interviewLayout = getInterviewLayout(currentDayInterviews);
 
-  const days = Array.from({ length: 8 }, (_, i) => i + 1);  return (
-    <div className="w-full max-w-7xl mx-auto">
+  const days = Array.from({ length: 8 }, (_, i) => i + 1);
+  return (
+    <div className="w-full max-w-7xl mx-auto p-6">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">面試行事曆</h1>
+        <p className="text-gray-600">8天面試安排總覽</p>
+      </div>
+
       {/* Day Navigation */}
       <div className="mb-6">
         <div className="flex flex-wrap gap-2">
